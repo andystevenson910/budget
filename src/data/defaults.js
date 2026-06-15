@@ -1,0 +1,33 @@
+export const DEFAULT_CATEGORIES = [
+  { id: 'cat-1',  name: '🏠 Housing/Rent',    monthlyBudget: 1500 },
+  { id: 'cat-2',  name: '🚗 Transportation',   monthlyBudget: 300  },
+  { id: 'cat-3',  name: '🛒 Groceries',        monthlyBudget: 400  },
+  { id: 'cat-4',  name: '🍔 Dining Out',       monthlyBudget: 200  },
+  { id: 'cat-5',  name: '💡 Utilities',        monthlyBudget: 150  },
+  { id: 'cat-6',  name: '📱 Subscriptions',    monthlyBudget: 50   },
+  { id: 'cat-7',  name: '🏥 Health/Medical',   monthlyBudget: 100  },
+  { id: 'cat-8',  name: '👗 Clothing',         monthlyBudget: 100  },
+  { id: 'cat-9',  name: '🎉 Entertainment',    monthlyBudget: 150  },
+  { id: 'cat-10', name: '🎓 Education',        monthlyBudget: 50   },
+  { id: 'cat-11', name: '🐾 Pet Care',         monthlyBudget: 80   },
+  { id: 'cat-12', name: '🏋️ Fitness',          monthlyBudget: 60   },
+  { id: 'cat-13', name: '✈️ Travel/Vacation',  monthlyBudget: 200  },
+  { id: 'cat-14', name: '🎁 Gifts',            monthlyBudget: 50   },
+  { id: 'cat-15', name: '💼 Business/Work',    monthlyBudget: 100  },
+  { id: 'cat-16', name: '🧴 Personal Care',    monthlyBudget: 80   },
+  { id: 'cat-17', name: '🏡 Home/Decor',       monthlyBudget: 100  },
+  { id: 'cat-18', name: '📦 Other',            monthlyBudget: 200  },
+];
+
+export const SEED_TRANSACTIONS = [
+  { id: 'seed-1',  date: '2026-06-01', description: 'Whole Foods run',     category: '🛒 Groceries',     amount: 67.42,  type: 'Expense', notes: 'Weekly shop'    },
+  { id: 'seed-2',  date: '2026-06-01', description: 'Gas station',         category: '🚗 Transportation', amount: 45.00,  type: 'Expense', notes: ''              },
+  { id: 'seed-3',  date: '2026-06-02', description: 'Chipotle lunch',      category: '🍔 Dining Out',     amount: 13.75,  type: 'Expense', notes: ''              },
+  { id: 'seed-4',  date: '2026-06-02', description: 'Netflix',             category: '📱 Subscriptions',  amount: 15.99,  type: 'Expense', notes: 'Monthly'       },
+  { id: 'seed-5',  date: '2026-06-03', description: 'Freelance payment',   category: '📦 Other',          amount: 500.00, type: 'Income',  notes: 'Client project' },
+  { id: 'seed-6',  date: '2026-06-03', description: 'Coffee & pastry',     category: '🍔 Dining Out',     amount: 9.50,   type: 'Expense', notes: ''              },
+  { id: 'seed-7',  date: '2026-06-04', description: 'Electric bill',       category: '💡 Utilities',      amount: 88.00,  type: 'Expense', notes: ''              },
+  { id: 'seed-8',  date: '2026-06-04', description: 'Amazon - phone case', category: '📦 Other',          amount: 19.99,  type: 'Expense', notes: ''              },
+  { id: 'seed-9',  date: '2026-06-05', description: 'Gym membership',      category: '🏋️ Fitness',        amount: 45.00,  type: 'Expense', notes: 'Monthly'       },
+  { id: 'seed-10', date: '2026-06-05', description: 'Happy hour drinks',   category: '🍔 Dining Out',     amount: 28.00,  type: 'Expense', notes: 'With coworkers' },
+];
