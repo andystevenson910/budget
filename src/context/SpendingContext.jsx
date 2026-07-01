@@ -40,6 +40,20 @@ export function SpendingProvider({ userId, children }) {
     setData(d => ({ ...d, transactions: d.transactions.filter(t => t.id !== id) }));
   }
 
+  function updateTransaction(id, updates) {
+    setData(d => ({
+      ...d,
+      transactions: d.transactions.map(t => t.id === id ? { ...t, ...updates } : t),
+    }));
+  }
+
+  function markAllCreditCardPaid() {
+    setData(d => ({
+      ...d,
+      transactions: d.transactions.map(t => t.creditCard ? { ...t, creditCardPaid: true } : t),
+    }));
+  }
+
   function addCategory(cat) {
     setData(d => ({ ...d, categories: [...d.categories, { ...cat, id: crypto.randomUUID() }] }));
   }
@@ -87,7 +101,7 @@ export function SpendingProvider({ userId, children }) {
   return (
     <SpendingContext.Provider value={{
       ...data,
-      addTransaction, deleteTransaction,
+      addTransaction, deleteTransaction, updateTransaction, markAllCreditCardPaid,
       addCategory, updateCategory, deleteCategory,
       importData, clearData,
     }}>

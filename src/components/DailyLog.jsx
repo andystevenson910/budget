@@ -6,7 +6,7 @@ const fmt = n => '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 const today = () => new Date().toISOString().split('T')[0];
 
 export default function DailyLog() {
-  const { transactions, categories, addTransaction, deleteTransaction } = useSpending();
+  const { transactions, categories, addTransaction, deleteTransaction, updateTransaction, markAllCreditCardPaid } = useSpending();
 
   const now = new Date();
   const [filterMonth, setFilterMonth] = useState(now.getMonth());
@@ -15,7 +15,7 @@ export default function DailyLog() {
   const [filterType, setFilterType] = useState('All');
 
   const [form, setForm] = useState({
-    date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '',
+    date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '', creditCard: false,
   });
   const [catSearch, setCatSearch] = useState('');
   const [catOpen, setCatOpen] = useState(false);
@@ -48,8 +48,8 @@ export default function DailyLog() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    addTransaction({ ...form, amount: parseFloat(form.amount) });
-    setForm({ date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '' });
+    addTransaction({ ...form, amount: parseFloat(form.amount), creditCardPaid: false });
+    setForm({ date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '', creditCard: false });
     setCatSearch('');
     setErrors({});
     setSuccess(true);
@@ -153,12 +153,21 @@ export default function DailyLog() {
             />
           </div>
 
-          <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-4">
+          <div className="sm:col-span-2 lg:col-span-3 flex items-center gap-6 flex-wrap">
             <button type="submit"
               className="bg-subheader text-white px-6 py-2 rounded font-medium hover:bg-blue-800 transition-colors"
             >
               Add Transaction
             </button>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.creditCard}
+                onChange={e => setForm(f => ({ ...f, creditCard: e.target.checked }))}
+                className="w-4 h-4 accent-subheader"
+              />
+              <span className="text-sm font-medium text-gray-600">💳 Credit Card</span>
+            </label>
             {success && <span className="text-success-green text-sm font-medium">✓ Saved!</span>}
           </div>
         </form>
@@ -189,6 +198,21 @@ export default function DailyLog() {
         ))}
       </div>
 
+      {/* Mark All CC Paid */}
+      {displayed.some(t => t.creditCard && !t.creditCardPaid) && (
+        <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+          <span className="text-sm text-blue-700 font-medium">
+            💳 {displayed.filter(t => t.creditCard && !t.creditCardPaid).length} unpaid credit card purchase(s) this period
+          </span>
+          <button
+            onClick={() => markAllCreditCardPaid()}
+            className="bg-subheader text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-blue-800 transition-colors"
+          >
+            Mark All CC Paid
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       {displayed.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -208,6 +232,7 @@ export default function DailyLog() {
                   <th className="text-right px-4 py-2">Amount</th>
                   <th className="text-left px-4 py-2">Type</th>
                   <th className="text-left px-4 py-2">Notes</th>
+                  <th className="text-left px-4 py-2">Credit Card</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
@@ -230,6 +255,24 @@ export default function DailyLog() {
                       }`}>{t.type}</span>
                     </td>
                     <td className="px-4 py-2 text-gray-400 text-xs">{t.notes}</td>
+                    <td className="px-4 py-2">
+                      {t.creditCard && (
+                        <div className="flex flex-col gap-1 min-w-[80px]">
+                          <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded w-fit">💳 CC</span>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+                            <input
+                              type="checkbox"
+                              checked={!!t.creditCardPaid}
+                              onChange={e => updateTransaction(t.id, { creditCardPaid: e.target.checked })}
+                              className="w-3.5 h-3.5 accent-subheader"
+                            />
+                            {t.creditCardPaid
+                              ? <span className="text-success-green font-medium">Paid</span>
+                              : <span className="text-warning-red font-medium">Unpaid</span>}
+                          </label>
+                        </div>
+                      )}
+                    </td>
                     <td className="px-4 py-2">
                       <button
                         onClick={() => {
