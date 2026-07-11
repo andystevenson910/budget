@@ -1,8 +1,11 @@
+// Expenses that were paid back (reimbursed) don't count against totals or budgets.
+const countsAsExpense = t => t.type === 'Expense' && !t.reimbursed;
+
 export function spentThisMonth(transactions, categoryName, month, year) {
   return transactions
     .filter(t => {
       const d = new Date(t.date + 'T00:00:00');
-      return t.type === 'Expense'
+      return countsAsExpense(t)
         && t.category === categoryName
         && d.getMonth() === month
         && d.getFullYear() === year;
@@ -23,14 +26,14 @@ export function totalExpensesThisMonth(transactions, month, year) {
   return transactions
     .filter(t => {
       const d = new Date(t.date + 'T00:00:00');
-      return t.type === 'Expense' && d.getMonth() === month && d.getFullYear() === year;
+      return countsAsExpense(t) && d.getMonth() === month && d.getFullYear() === year;
     })
     .reduce((sum, t) => sum + t.amount, 0);
 }
 
 export function expensesOnDay(transactions, dateStr) {
   return transactions
-    .filter(t => t.type === 'Expense' && t.date === dateStr)
+    .filter(t => countsAsExpense(t) && t.date === dateStr)
     .reduce((sum, t) => sum + t.amount, 0);
 }
 

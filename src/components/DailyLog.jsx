@@ -14,9 +14,12 @@ export default function DailyLog() {
   const [filterCategory, setFilterCategory] = useState('');
   const [filterType, setFilterType] = useState('All');
 
-  const [form, setForm] = useState({
-    date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '', creditCard: false,
+  const emptyForm = () => ({
+    date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '',
+    creditCard: false, reimbursable: false, reimbursedBy: '',
   });
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState(null);
   const [catSearch, setCatSearch] = useState('');
   const [catOpen, setCatOpen] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -48,12 +51,40 @@ export default function DailyLog() {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    addTransaction({ ...form, amount: parseFloat(form.amount), creditCardPaid: false });
-    setForm({ date: today(), description: '', category: '', amount: '', type: 'Expense', notes: '', creditCard: false });
+    if (editingId) {
+      const updates = { ...form, amount: parseFloat(form.amount) };
+      // Unchecking a flag clears its paid/repaid state too
+      if (!updates.creditCard) updates.creditCardPaid = false;
+      if (!updates.reimbursable) { updates.reimbursed = false; updates.reimbursedBy = ''; updates.reimbursedDate = null; }
+      updateTransaction(editingId, updates);
+      setEditingId(null);
+    } else {
+      addTransaction({ ...form, amount: parseFloat(form.amount), creditCardPaid: false, reimbursed: false });
+    }
+    setForm(emptyForm());
     setCatSearch('');
     setErrors({});
     setSuccess(true);
     setTimeout(() => setSuccess(false), 2000);
+  }
+
+  function startEdit(t) {
+    setEditingId(t.id);
+    setForm({
+      date: t.date, description: t.description, category: t.category,
+      amount: String(t.amount), type: t.type, notes: t.notes || '',
+      creditCard: !!t.creditCard, reimbursable: !!t.reimbursable, reimbursedBy: t.reimbursedBy || '',
+    });
+    setCatSearch('');
+    setErrors({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm());
+    setCatSearch('');
+    setErrors({});
   }
 
   const displayed = transactions
@@ -72,7 +103,7 @@ export default function DailyLog() {
 
       {/* Add Form */}
       <div className="bg-white rounded-lg shadow p-5">
-        <h2 className="font-semibold text-subheader mb-4">Add Transaction</h2>
+        <h2 className="font-semibold text-subheader mb-4">{editingId ? 'Edit Transaction' : 'Add Transaction'}</h2>
         <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 
           {/* Date */}
@@ -157,8 +188,15 @@ export default function DailyLog() {
             <button type="submit"
               className="bg-subheader text-white px-6 py-2 rounded font-medium hover:bg-blue-800 transition-colors"
             >
-              Add Transaction
+              {editingId ? 'Save Changes' : 'Add Transaction'}
             </button>
+            {editingId && (
+              <button type="button" onClick={cancelEdit}
+                className="bg-gray-100 text-gray-600 px-4 py-2 rounded font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            )}
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
@@ -168,6 +206,21 @@ export default function DailyLog() {
               />
               <span className="text-sm font-medium text-gray-600">💳 Credit Card</span>
             </label>
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={form.reimbursable}
+                onChange={e => setForm(f => ({ ...f, reimbursable: e.target.checked }))}
+                className="w-4 h-4 accent-subheader"
+              />
+              <span className="text-sm font-medium text-gray-600">🤝 Pay Me Back</span>
+            </label>
+            {form.reimbursable && (
+              <input type="text" value={form.reimbursedBy} placeholder="Who owes you?"
+                onChange={e => setForm(f => ({ ...f, reimbursedBy: e.target.value }))}
+                className="border rounded px-3 py-1.5 text-sm w-40 focus:outline-none focus:ring-2 focus:ring-subheader"
+              />
+            )}
             {success && <span className="text-success-green text-sm font-medium">✓ Saved!</span>}
           </div>
         </form>
@@ -213,6 +266,16 @@ export default function DailyLog() {
         </div>
       )}
 
+      {/* Pending Reimbursements */}
+      {displayed.some(t => t.reimbursable && !t.reimbursed) && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          <span className="text-sm text-amber-700 font-medium">
+            🤝 {displayed.filter(t => t.reimbursable && !t.reimbursed).length} pending reimbursement(s) this period
+            — {fmt(displayed.filter(t => t.reimbursable && !t.reimbursed).reduce((s, t) => s + t.amount, 0))} owed to you
+          </span>
+        </div>
+      )}
+
       {/* Table */}
       {displayed.length === 0 ? (
         <div className="bg-white rounded-lg shadow p-12 text-center">
@@ -233,16 +296,20 @@ export default function DailyLog() {
                   <th className="text-left px-4 py-2">Type</th>
                   <th className="text-left px-4 py-2">Notes</th>
                   <th className="text-left px-4 py-2">Credit Card</th>
+                  <th className="text-left px-4 py-2">Reimburse</th>
                   <th className="px-4 py-2" />
                 </tr>
               </thead>
               <tbody>
                 {displayed.map((t, i) => (
-                  <tr key={t.id} className={i % 2 === 0 ? 'bg-white' : 'bg-alt-row'}>
+                  <tr key={t.id} className={
+                    editingId === t.id ? 'bg-blue-50' : i % 2 === 0 ? 'bg-white' : 'bg-alt-row'
+                  }>
                     <td className="px-4 py-2 text-gray-600 whitespace-nowrap">{t.date}</td>
                     <td className="px-4 py-2 font-medium">{t.description}</td>
                     <td className="px-4 py-2 text-gray-600">{t.category}</td>
                     <td className={`px-4 py-2 text-right font-semibold ${
+                      t.reimbursed ? 'text-gray-400 line-through' :
                       t.type === 'Income' ? 'text-success-green' : 'text-warning-red'
                     }`}>
                       {t.type === 'Income' ? '+' : '-'}{fmt(t.amount)}
@@ -274,6 +341,34 @@ export default function DailyLog() {
                       )}
                     </td>
                     <td className="px-4 py-2">
+                      {t.reimbursable && (
+                        <div className="flex flex-col gap-1 min-w-[90px]">
+                          <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded w-fit">
+                            🤝 {t.reimbursedBy || 'Owed'}
+                          </span>
+                          <label className="flex items-center gap-1.5 cursor-pointer text-xs">
+                            <input
+                              type="checkbox"
+                              checked={!!t.reimbursed}
+                              onChange={e => updateTransaction(t.id, {
+                                reimbursed: e.target.checked,
+                                reimbursedDate: e.target.checked ? today() : null,
+                              })}
+                              className="w-3.5 h-3.5 accent-subheader"
+                            />
+                            {t.reimbursed
+                              ? <span className="text-success-green font-medium" title={t.reimbursedDate ? `Paid back ${t.reimbursedDate}` : ''}>Paid back</span>
+                              : <span className="text-warning-red font-medium">Pending</span>}
+                          </label>
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 whitespace-nowrap">
+                      <button
+                        onClick={() => startEdit(t)}
+                        className="text-gray-400 hover:text-subheader transition-colors mr-2"
+                        title="Edit"
+                      >✏️</button>
                       <button
                         onClick={() => {
                           if (window.confirm(`Delete "${t.description}"?`)) deleteTransaction(t.id);
